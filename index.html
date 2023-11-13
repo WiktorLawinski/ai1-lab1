@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Puzzle Game</title>
+  <link rel="stylesheet" href="puzzle.css">
+  <link rel="stylesheet" href="leaflet-1.7.1/leaflet.css" />
+  <script src="leaflet-1.7.1/leaflet-src.js"></script>
+  <script src="leaflet-1.7.1/leaflet-providers.js"></script>
+  <script src="leaflet-1.7.1/leaflet-image.js"></script>
+</head>
+<body>
+<div id="map"></div>
+<div id="board"></div>
+<button id="getLocation">Moja lokalizacja</button>
+<button id="saveButton">Pobierz mapę</button>
+<br>
+
+<canvas id="rasterMap"></canvas>
+<div id="imageParts" style="display: flex; flex-wrap: wrap;"></div>
+<script>
+  const rows = 4;
+  const columns = 4;
+
+  let currTile;
+  let otherTile;
+  let boardbuild; //flaga
+
+  let puzzlesrc = [];
+
+  let granted = false;
+
+  if (Notification.permission === 'granted') {
+    granted = true;
+  } else if (Notification.permission !== 'denied') {
+    let permission = Notification.requestPermission();
+    granted = permission === 'granted' ? true : false;
+  }
+
+
+  let map = L.map('map').setView([53.430127, 14.564802], 18);
+  L.tileLayer.provider('Esri.WorldImagery').addTo(map);
+
+  document.getElementById("saveButton").addEventListener("click", function() {
+    leafletImage(map, function (err, canvas) {
+      let rasterMap = document.getElementById("rasterMap");
+      let rasterContext = rasterMap.getContext("2d");
+
+      rasterContext.drawImage(canvas, 0, 0, 300, 150);
+
+      //board
+      if (boardbuild!=1) {
+        boardbuild=1;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < columns; c++) {
+            //<img>
+            let tile = document.createElement("img");
+            tile.src = "blank.jpg";
+            tile.setAttribute("id", JSON.stringify(r*4+c));
+            tile.addEventListener("dragstart", dragStart); //click on image to drag
+            tile.addEventListener("dragover", dragOver);   //drag an image
+            tile.addEventListener("dragenter", dragEnter); //dragging an image into another one
+            tile.addEventListener("dragleave", dragLeave); //dragging an image away from another one
+            tile.addEventListener("drop", dragDrop);       //drop an image onto another one
+            tile.addEventListener("dragend", dragEnd);      //after you completed dragDrop
+
+            document.getElementById("board").append(tile);
+          }
+        }
+      }
+      else {
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < columns; c++) {
+            document.getElementById(r*4+c).src="blank.jpg"
+          }
+        }
+      }
+
+      // Po wygenerowaniu obrazu, podziel go na 16 części
+      const image = new Image();
+      image.src = rasterMap.toDataURL('image/png');
+      image.onload = function () {
+        const partWidth = image.width / rows;
+        const partHeight = image.height / columns;
+
+        const parts = [];
+
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < columns; col++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = partWidth;
+            canvas.height = partHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(
+                    image,
+                    col * partWidth,
+                    row * partHeight,
+                    partWidth,
+                    partHeight,
+                    0,
+                    0,
+                    partWidth,
+                    partHeight
+            );
+
+            const imgPart = new Image();
+            imgPart.src = canvas.toDataURL('image/png');
+            puzzlesrc.push(imgPart.src);
+            imgPart.className = 'img-part';
+            imgPart.addEventListener("dragstart", dragStart); //click on image to drag
+            imgPart.addEventListener("dragover", dragOver);   //drag an image
+            imgPart.addEventListener("dragenter", dragEnter); //dragging an image into another one
+            imgPart.addEventListener("dragleave", dragLeave); //dragging an image away from another one
+            imgPart.addEventListener("drop", dragDrop);       //drop an image onto another one
+            imgPart.addEventListener("dragend", dragEnd);      //after you completed dragDrop
+            parts.push(imgPart);
+          }
+        }
+
+        // Tasowanie tablicy części
+        for (let i = parts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [parts[i], parts[j]] = [parts[j], parts[i]];
+        }
+
+        // Wyświetlenie części w losowej kolejności
+        const imagePartsContainer = document.getElementById('imageParts');
+        imagePartsContainer.innerHTML = ''; // Wyczyść poprzednie części
+        for (const part of parts) {
+          imagePartsContainer.appendChild(part);
+        }
+      };
+    });
+  });
+
+  document.getElementById("getLocation").addEventListener("click", function(event) {
+    if (! navigator.geolocation) {
+      console.log("No geolocation.");
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+      console.log(position);
+      let lat = position.coords.latitude;
+      let lon = position.coords.longitude;
+
+      map.setView([lat, lon]);
+    }, positionError => {
+      console.error(positionError);
+    });
+  });
+  //DRAG TILES
+  function dragStart() {
+    currTile = this; //this refers to image that was clicked on for dragging
+    this.style.border = "1px solid red";
+  }
+
+  function dragOver(e) {
+    e.preventDefault();
+  }
+
+  function dragEnter(e) {
+    e.preventDefault();
+  }
+
+  function dragLeave() {
+  }
+
+  function dragDrop() {
+    otherTile = this; //this refers to image that is being dropped on
+  }
+
+  function dragEnd() {
+    this.style.border = "1px solid gray";
+    if (currTile.src.includes("blank")) {
+      return;
+    }
+    let currImg = currTile.src;
+    let otherImg = otherTile.src;
+    currTile.src = otherImg;
+    otherTile.src = currImg;
+  }
+  function drop() {
+  }
+
+  ondragend = function IsCompleted() {
+    let points = 0;
+    let board = document.getElementById("");
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < columns; c++) {
+        if (document.getElementById(r*4+c).src==puzzlesrc[r*4+c]) {
+          points++;
+        }
+      }
+    }
+    if (points==16)
+    {
+      notif();
+      console.log("Gratulacje użytkowniku");
+    }
+  }
+  function notif()
+  {
+    const notification = new Notification('Gratulacje użytkowniku');
+  }
+
+</script>
+</body>
+</html>
