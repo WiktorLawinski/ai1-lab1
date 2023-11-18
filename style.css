@@ -1,0 +1,20 @@
+body
+{
+    text-align: center;
+    margin: auto;
+}
+
+#weatherResults
+{
+
+}
+
+.weather-block
+{
+    border-style: solid;
+    width: 13%;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 5px;
+}
