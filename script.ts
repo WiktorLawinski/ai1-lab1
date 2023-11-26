@@ -1,32 +1,26 @@
-// Definicja klasy przechowującej stan aplikacji
-
 class AppState {
     currentStyleName: string = '';
     currentStyleFile: string = '';
     availableStyles: { [key: string]: string } = {};
 
     constructor() {
-        // Inicjalizacja stanu aplikacji
         this.availableStyles = {
             'style1': 'styles/style.css',
-            'style2': 'styles/style2.css',
-            // Dodaj więcej dostępnych stylów w razie potrzeby
+            'style2': 'styles/style2.css'
         };
     }
-
-    // Metoda do ustawiania aktualnego stylu
+// KOD NIE DZIALA
     setStyle(styleName: string): void {
         if (this.availableStyles.hasOwnProperty(styleName)) {
-            this.removeOldStyle(); // Usuń poprzedni styl
+            this.removeOldStyle();
             this.currentStyleName = styleName;
             this.currentStyleFile = this.availableStyles[styleName];
-            this.applyNewStyle(); // Dodaj nowy styl
+            this.applyNewStyle();
         } else {
-            console.error('Wybrany styl nie istnieje.');
+            console.error('Wybrany styl nie istnieje');
         }
     }
 
-    // Metoda usuwająca poprzedni styl z DOM
     private removeOldStyle(): void {
         const oldStyleElement = document.getElementById('app-style');
         if (oldStyleElement) {
@@ -34,7 +28,6 @@ class AppState {
         }
     }
 
-    // Metoda dodająca nowy styl do DOM
     private applyNewStyle(): void {
         const linkElement = document.createElement('link');
         linkElement.id = 'app-style';
@@ -44,10 +37,6 @@ class AppState {
     }
 }
 
-// Przykład użycia
 const appState = new AppState();
-
-// Wywołanie aplikacji z linka (np. po kliknięciu przycisku)
-const selectedStyle = 'style1';
-appState.setStyle(selectedStyle);
+appState.setStyle('style2');
 
